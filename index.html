@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=<device-width>, initial-scale=1.0">
+    <title>Snake</title>
+    <style>
+        canvas{
+            border: 3px solid black
+        }
+
+        stats{
+            margin: 30px;
+            display: flex;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="480" height="320"></canvas>
+    <div class="stats">
+        <span id="curPoints"></span>
+        <br>
+        <span id="highScore"></span>
+    </div>
+<script>
+
+const canvas = document.querySelector("#myCanvas");
+const curPoints = document.querySelector("#curPoints");
+const highScore = document.querySelector("#highScore");
+
+
+highScore.innerHTML = localStorage.getItem(highScore) ? `High score: ${localStorage.getItem(highScore)}` : "High score: 0";
+
+    function snake(){
+
+window.addEventListener("keydown", function(e) {
+    if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+        e.preventDefault();
+    }
+}, false);
+
+let ctx = canvas.getContext("2d");
+
+let points = 0;
+
+let prevSync = (i) => {
+    snake.body[i].prevX = snake.body[i].x;
+    snake.body[i].prevY = snake.body[i].y;
+}
+
+const snake = {
+
+    body: 
+    [{
+        prevX: 20,
+        prevY: 0,
+        x: 10,
+        y: 0
+    }, 
+     {
+        x:10, 
+        y:0,
+        prevX: 0,
+        prevY: 0
+    }, 
+     {
+        x:0, 
+        y:0,
+        prevX: -10,
+        prevY: 0
+    }],
+
+    get head(){
+        return this.body[0]
+    },
+
+    speed: 10,
+    direction: "Right",
+    get highScore(){
+        if(localStorage.getItem(highScore)) return localStorage.getItem(highScore)
+    },
+    left(){
+       return this.head.x+=this.speed
+    },
+
+    right(){
+        return this.head.x-=this.speed
+    },
+
+    up(){
+        return this.head.y-=this.speed
+    },
+
+    down(){
+        return this.head.y+=this.speed
+    }
+}
+
+class Part{
+    constructor(x, y){
+        this.prevX = x;
+        this.prevY = y;
+        this.x = x;
+        this.y = y;
+    }
+}
+
+const apple = {
+    randX: 0,
+    randY: 0,
+    x: 0,
+    y: 0,
+
+    randNum(){
+        randX = (Math.floor(Math.random()*470)/10).toFixed(0)*10;
+        randY = (Math.floor(Math.random()*310)/10).toFixed(0)*10;
+    },
+
+    applyRand(){
+        this.x = randX,
+        this.y = randY
+    },
+
+    spawn(){
+        ctx.fillRect(this.x, this.y, 10, 10);
+    },
+
+    destroy(){
+        ctx.clearRect(this.x, this.y, 10, 10);
+    }
+}
+
+let direction = () => snake.head.x-=snake.speed;
+
+document.addEventListener("keydown", event => {
+    if(event.key === "ArrowUp" && snake.direction !== "Down"){
+        snake.direction = "Up"; return direction = () => snake.up()
+    }
+    if(event.key === "ArrowDown" && snake.direction !== "Up"){
+        snake.direction = "Down"; return direction = () => snake.down()
+    }
+    if(event.key === "ArrowLeft" && snake.direction !== "Right"){
+        snake.direction = "Left"; return direction = () => snake.right()
+    }
+    if(event.key === "ArrowRight" && snake.direction !== "Left"){
+        snake.direction = "Right"; return direction = () => snake.left()
+    }
+});
+
+checkCollision =()=>{
+    snake.body.forEach((el, index) => {
+        if(index >= 1 && el.x === snake.head.x && el.y === snake.head.y) return gameOver()
+    })
+}
+ 
+gameOver =()=>{
+        snake.body = [{
+        prevX: 20,
+        prevY: 0,
+        x: 10,
+        y: 0
+    }, 
+     {
+        x:10, 
+        y:0,
+        prevX: 0,
+        prevY: 0
+    }, 
+     {
+        x:0, 
+        y:0,
+        prevX: -10,
+        prevY: 0
+    }]
+
+    if(localStorage.getItem(highScore) < points){
+        localStorage.setItem(highScore, points);
+        highScore.innerHTML = `High score: ${localStorage.getItem(highScore)}`
+    }
+
+    points = 0;
+ 
+}
+
+apple.randNum();
+apple.applyRand();
+
+
+
+function collectApple(){
+
+    snake.body.push(new Part(apple.x, apple.y));
+    
+        apple.destroy();
+        apple.randNum();
+        apple.applyRand();
+
+    
+}
+
+function render(){
+
+    if(snake.head.x<0 || snake.head.x>=480 || snake.head.y<0 || snake.head.y>=320) gameOver();
+    checkCollision();
+
+    curPoints.innerHTML = `Score: ${points}`;
+    
+    ctx.clearRect(0, 0, 480, 320);
+
+    ctx.fillStyle = "red";
+    apple.spawn();
+
+    if(snake.head.x === apple.x && snake.head.y === apple.y){
+        collectApple();
+        points++;
+    }
+   
+    ctx.fillStyle = "black";
+
+    snake.body.forEach((el, index, arr) => {
+        if(index >= 1){
+            el.x = arr[index-1].prevX;
+            el.y = arr[index-1].prevY;
+        }   
+        ctx.fillRect(el.x, el.y, 10, 10);
+    })  
+
+    snake.body.forEach((el, index) => prevSync(index));     
+
+    direction();
+}
+
+
+return setInterval(render, 1000/10);
+}
+
+let snakeGame = snake();
+</script>
+</body>
+</html>
